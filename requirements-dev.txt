@@ -1,0 +1,5 @@
+-r requirements.txt
+pytest
+moto[s3]
+boto3
+cfn-lint

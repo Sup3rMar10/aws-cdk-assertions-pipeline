@@ -1,0 +1,58 @@
+name: deploy
+
+# Reference pipeline, NEVER RUN against a real AWS account. Skipped unless AWS_DEPLOY_ROLE_ARN is set
+# (see the aws-oidc-github-deploy repository for the keyless role this assumes).
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  diff:
+    # On a pull request: show exactly what would change, using a read-only role. Changes nothing.
+    if: github.event_name == 'pull_request' && vars.AWS_PLAN_ROLE_ARN != ''
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - run: npm install -g aws-cdk
+      - run: python -m pip install -r requirements.txt
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_PLAN_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - run: cdk diff -c stage=prod
+
+  deploy:
+    if: github.event_name == 'push' && vars.AWS_DEPLOY_ROLE_ARN != ''
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - run: npm install -g aws-cdk
+      - run: python -m pip install -r requirements.txt
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - run: cdk deploy Ingest-prod -c stage=prod --require-approval never

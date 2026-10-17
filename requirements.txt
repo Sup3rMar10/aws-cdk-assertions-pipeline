@@ -1,0 +1,4 @@
+aws-cdk-lib>=2.170,<3
+constructs>=10,<11
+# cdk-nag 3.x changed its suppression API; this repo uses the 2.x NagSuppressions API.
+cdk-nag>=2.37,<3

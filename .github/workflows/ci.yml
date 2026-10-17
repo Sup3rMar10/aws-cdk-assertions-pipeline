@@ -1,0 +1,57 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python -m pytest
+
+  synth:
+    # The real CDK CLI, as a deploy would use it, with no AWS credentials. Unsuppressed cdk-nag findings are
+    # error annotations, which make `cdk synth` exit non-zero.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - run: npm install -g aws-cdk
+      - run: python -m pip install -r requirements-dev.txt
+      - name: Synthesize dev and prod
+        run: |
+          cdk synth -c stage=dev --quiet
+          cp -r cdk.out cdk.out-dev
+          cdk synth -c stage=prod --quiet
+      - name: Lint the generated CloudFormation
+        # W3045: CDK's log-bucket ownership setting uses the legacy ACL property on purpose.
+        # W3005: CDK adds an explicit dependency that cfn-lint considers redundant.
+        run: |
+          cfn-lint cdk.out-dev/Ingest-dev.template.json -i W3045 W3005
+          cfn-lint cdk.out/Ingest-prod.template.json -i W3045 W3005
+
+  workflows:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: |
+          bash <(curl -s https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+          ./actionlint -color
