@@ -4,7 +4,7 @@
 
 An AWS CDK (Python) app whose pipeline treats **infrastructure as testable code**: fine-grained assertions on the synthesized CloudFormation, **cdk-nag compliance checks that fail the build**, the real CDK CLI synthesizing both stages, and `cfn-lint` on the generated templates, all with no AWS credentials.
 
-> **What is verified, and what is not.** 45 tests pass locally on Python 3.13 (about a minute, mostly synthesis), covering the stack, the cdk-nag AwsSolutions pack and the Lambda handler (against moto, an in-memory S3). `cfn-lint` finds no errors in the synthesized templates. **Nothing here has ever been deployed**: there is no AWS account behind this repository, so `cdk diff` and `cdk deploy` have never run, and the deploy workflow is skipped unless you set `AWS_DEPLOY_ROLE_ARN`.
+> **What is verified, and what is not.** 45 tests pass locally on Python 3.13 (about a minute, mostly synthesis), covering the stack, the cdk-nag AwsSolutions pack and the Lambda handler (against moto, an in-memory S3). `cfn-lint` finds no errors in the synthesized templates. GitHub Actions on Linux also passed the tests, the **real `cdk synth` CLI** for dev and prod (so cdk-nag findings would have failed it), `cfn-lint` on its output, and `actionlint` (2026-10-17). **Nothing here has ever been deployed**: there is no AWS account behind this repository, so `cdk diff` and `cdk deploy` have never run, and the deploy workflow is skipped unless you set `AWS_DEPLOY_ROLE_ARN`.
 
 ## What it builds (`ingest/stack.py`)
 
